@@ -20,7 +20,6 @@
 # - plotrix 3.6-1
 #
 # FIXME:
-# - Support replicates
 # - Support custom colors
 
 library(caroline)
@@ -29,15 +28,28 @@ library(plotrix)
 mantaPlot <- function(counts, exactTest, group1, group2, taxa = 4,
                       title=NULL, xlab = "Average LogCPM", ylab = "Log Fold Change", ylim=c(-15, 15)) {
 
-  # Check if replicates
-  if (length(group1) > 1 || length(group2) > 1) {
- 
+  # Normalize libraries with or without replicates
+  # by library size
+  if (length(group1) > 1) {
+    for (col in group1) {
+      counts[,col] <- counts[,col] / (sum(counts[,col]) * 1e-6)
+    } 
+    counts$group1 <- rowMeans(counts[,group1])
   } else {
-    counts <- subset(counts, select = c('KO', 'genus', group1, group2))
-    counts[,group1] <- counts[,group1] / (sum(counts[,group1]) * 1e-6)
-    counts[,group2] <- counts[,group2] / (sum(counts[,group2]) * 1e-6)
-    counts$sum <- counts[,group1] + counts[,group2]   
+    counts$group1 <- counts[,group1] / (sum(counts[,group1]) * 1e-6)
   }
+  
+  if (length(group2) > 1) {
+    for (col in group2) {
+      counts[,col] <- counts[,col] / (sum(counts[,col]) * 1e-6)
+    } 
+    counts$group2 <- rowMeans(counts[,group2])
+  } else {
+    counts$group2 <- counts[,group2] / (sum(counts[,group2]) * 1e-6)
+  }
+  
+  counts <- subset(counts, select = c('KO', 'genus', 'group1', 'group2'))
+  counts$sum <- counts$group1 + counts$group2
   
   # Build new data frame
   # Rows: KOs
@@ -51,9 +63,9 @@ mantaPlot <- function(counts, exactTest, group1, group2, taxa = 4,
   df <- df[order(rownames(df)),]
   
   # Calculate the percentage of each KO for each tax group
-  total_kos <- groupBy(counts, by="KO", clmns=c('sum'), aggregation='sum')
+  ko_count_total <- groupBy(counts, by="KO", clmns=c('sum'), aggregation='sum')
   for (genus in genera) {
-    df[,genus] <- (groupBy(counts[counts$genus == genus,], by="KO", clmns = c('sum'), aggregation='sum') / total_kos)
+    df[,genus] <- (groupBy(counts[counts$genus == genus,], by="KO", clmns = c('sum'), aggregation='sum') / ko_count_total)
   }
   df[is.na(df)] <- 0
   
@@ -68,7 +80,7 @@ mantaPlot <- function(counts, exactTest, group1, group2, taxa = 4,
        cex = 0.1, 
        main = title, 
        xlab = xlab, ylab = ylab, 
-       ylim=ylim)
+       ylim = ylim)
   abline(h = 0)
   colors <- c("#1F77B4", "#D62728", "#2CA02C", "#FF7F0E", "#7F7F7F")
   legend('topright', inset = 0.02, names(df), fill = colors, cex = 0.75)
