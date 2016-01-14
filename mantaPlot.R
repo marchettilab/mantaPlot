@@ -82,16 +82,16 @@ mantaPlot <- function(counts, exactTest, group1, group2, taxa = 4,
        xlab = xlab, ylab = ylab, 
        ylim = ylim)
   abline(h = 0)
-  colors <- c("#1F77B4", "#D62728", "#2CA02C", "#FF7F0E", "#7F7F7F")
+  legend_colors <- c("#1F77B4", "#D62728", "#2CA02C", "#FF7F0E")
+  legend_colors[taxa+1] <- "#7F7F7F"
   legend('topright', inset = 0.02, names(df), fill = colors, cex = 0.75)
   
-  kos <- unique(exactTest$KO) # In case your ET output has less KOs than counts file for some reason
   for (ko in kos) {
     x = exactTest[exactTest$KO == ko,]$logCPM
     y = exactTest[exactTest$KO == ko,]$logFC
     pie_percents <- as.numeric(df[ko,])
     radius <- (x + abs(y))/ 100
-    colors <- c("#1F77B4", "#D62728", "#2CA02C", "#FF7F0E", "#7F7F7F")
+    colors <- legend_colors
     border = "black"
     if (exactTest[exactTest$KO == ko,]$PValue > 0.05) {
       colors <- paste(colors, "33", sep='')
