@@ -18,16 +18,25 @@
 # Dependencies:
 # - caroline 0.7.6
 # - plotrix 3.6-1
+# - RColorBrewer 1.1-2
 #
-# FIXME:
-# - Support custom colors
 
 library(caroline)
 library(plotrix)
+library(RColorBrewer)
 
-mantaPlot <- function(counts, exactTest, group1, group2, taxa = 4,
+mantaPlot <- function(counts, exactTest, group1, group2, taxa = 4, colors = NULL,
                       title=NULL, xlab = "Average LogCPM", ylab = "Log Fold Change", ylim=c(-15, 15)) {
 
+  # Set colors
+  if (!is.null(colors) && length(colors) < taxa) {
+    print ("Not enough colors in input for number of taxa. Setting default colors.")  
+    colors = NULL
+  }
+  if (is.null(colors)) {
+    colors = colorRampPalette(brewer.pal(taxa,"Set1"))(taxa)
+  }
+  
   # Normalize libraries with or without replicates
   # by library size
   if (length(group1) > 1) {
@@ -82,16 +91,15 @@ mantaPlot <- function(counts, exactTest, group1, group2, taxa = 4,
        xlab = xlab, ylab = ylab, 
        ylim = ylim)
   abline(h = 0)
-  legend_colors <- c("#1F77B4", "#D62728", "#2CA02C", "#FF7F0E")
-  legend_colors[taxa+1] <- "#7F7F7F"
-  legend('topright', inset = 0.02, names(df), fill = legend_colors, cex = 0.75)
+  colors[taxa+1] <- "#7F7F7F"
+  legend('topright', inset = 0.02, names(df), fill = colors, cex = 0.75)
   
   for (ko in kos) {
     x = exactTest[exactTest$KO == ko,]$logCPM
     y = exactTest[exactTest$KO == ko,]$logFC
     pie_percents <- as.numeric(df[ko,])
     radius <- (x + abs(y))/ 100
-    pie_colors <- legend_colors
+    pie_colors <- colors
     border = "black"
     if (exactTest[exactTest$KO == ko,]$PValue > 0.05) {
       pie_colors <- paste(pie_colors, "33", sep='')
